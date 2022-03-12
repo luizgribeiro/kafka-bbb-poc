@@ -1,0 +1,10 @@
+{
+  "name": "kafkabbb",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Luiz Ribeiro <ltrindaderibeiro@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "tsc": "^2.0.4"
+  }
+}

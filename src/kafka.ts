@@ -1,57 +1,47 @@
-import { Kafka, SASLOptions } from "kafkajs";
+import { Kafka, SASLOptions, Producer } from "kafkajs";
 import { Config } from "./config/config";
 
-class KafkaClient {
-  constructor(env: Config) {
-    //const mechanism: 'plain' = 'plain';
-    const sasl = {
-      username: env.KAFKA_KEY,
-      password: env.KAFKA_SECRET,
-      mechanism: "plain",
-    };
+export class KafkaClient {
+  private producer: Producer;
 
-    if (sasl === null) {
-      throw new Error("Config error: sasl");
-    }
+  constructor(env: Config) {
+    const sasl = this.saslFactory(env.KAFKA_KEY, env.KAFKA_SECRET);
+
     const kafka = new Kafka({
       clientId: "Node Kafka -- BBB API",
       brokers: [env.KAFKA_BOOTSTRAP_SERVER],
       sasl,
       ssl: !!sasl,
     });
+    this.producer = kafka.producer();
   }
 
-  kafka = new Kafka({
-    clientId: "Node Kafka",
-    brokers: [this.parseEnvVariable(process.env.KAFKA_BOOTSTRAP_SERVER)],
-    ssl,
-    sasl,
-  });
+  async connect() {
+    await this.producer.connect();
+  }
+
+  async publishMessage(topic: string, message: string, key: string) {
+    try {
+      const responses = await this.producer.send({
+        topic,
+        messages: [
+          {
+            key,
+            value: message,
+          },
+        ],
+      });
+      console.log("Message published successfully", responses);
+    } catch (error) {
+      console.error("Could not publish message", error);
+    }
+  }
+
+  private saslFactory(kafkaKey: string, kafkaSecret: string): SASLOptions {
+    return {
+      username: kafkaKey,
+      password: kafkaSecret,
+      mechanism: "plain",
+    };
+  }
 }
-
-/*
-(async () => {
-  const producer = kafka.producer();
-  await producer.connect();
-  try {
-    const responses = await producer.send({
-      topic: process.env?.TOPIC || "error",
-      messages: [
-        {
-          // Name of the published package as key, to make sure that we process events in order
-          key: "nome teste", //event.name,
-
-          value: JSON.stringify({
-            package: "nome teste", //event.name,
-            version: "versao teste", //event.version,
-          }),
-        },
-      ],
-    });
-
-    console.log("Published message", { responses });
-  } catch (error) {
-    console.error("Error publishing message", error);
-  }
-})();
-*/
